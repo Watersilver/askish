@@ -1,0 +1,24 @@
+{
+  "name": "portfolio",
+  "version": "1.0.0",
+  "repository": "https://github.com/Watersilver/portfolio.git",
+  "author": "ez <cydisalt@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "parcel-bundler": "^1.12.5"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.3",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "font-awesome": "^4.7.0",
+    "mongodb": "^4.0.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "scripts": {
+    "start": "node server",
+    "dev": "parcel watch index.html --out-dir build --out-file index.html --public-url ./",
+    "build": "parcel build index.html --out-dir build --out-file index.html --public-url ./"
+  }
+}
