@@ -1,6 +1,8 @@
 # contacts
 An app that stores contact information
 
+Warning: Needs an .env file with a field called DB with a mongodb connection uri
+
 ## Api response
 
 - Always json.
