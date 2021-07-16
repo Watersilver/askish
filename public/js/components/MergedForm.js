@@ -1,5 +1,8 @@
 import React, {Component} from "react";
 
+// Enum for screen state
+import screenEnum from "../screenEnum.js";
+
 import re from "../../../universal/regularExpressions.js";
 
 import Phones from "./Phones.js";
@@ -28,16 +31,23 @@ class EditForm extends Component {
   constructor(props) {
     super(props);
 
+    // Store if we are editing or inserting new contact
+    // Will be used throughout the component
+    // to separate insert logic from edit logic
+    const edit = props.screen === screenEnum.view;
+
     // Ensure consistent phones viewing order
-    if (Array.isArray(this.props.viewing.phones))
+    if (edit && Array.isArray(this.props.viewing.phones))
       this.props.viewing.phones.sort();
 
     this.state = {
-      name: null,
-      email: null,
-      address: null,
-      phones: null,
-      currentPhone: null, // Phone number currently being edited
+      name: edit ? null : "",
+      email: edit ? null : "",
+      address: edit ? null : "",
+      phones: edit ? null : [],
+
+      // Phone that is currently being inputer. Will be the one validated
+      currentPhone: null,
 
       // Validation prompts
       nameValidation: null,
@@ -60,6 +70,7 @@ class EditForm extends Component {
     this.deleteUnnecessaryEdits = this.deleteUnnecessaryEdits.bind(this);
     this.isEdited = this.isEdited.bind(this);
     this.cancel = this.cancel.bind(this);
+    this.submitForm = this.submitForm.bind(this);
   }
 
   handleNameChange(event) {
@@ -68,7 +79,14 @@ class EditForm extends Component {
 
   // Return false if name is invalid
   validateName(value, callback) {
-    if (!value || value === this.props.viewing._id) {
+
+    const edit = this.props.screen === screenEnum.view;
+    
+    if (!edit && !value) {
+      this.setState({nameValidation: "Name is required."});
+      return false;
+    }
+    else if (edit && (!value || value === this.props.viewing._id)) {
       return true;
     } else if (this.props.list.map(obj => obj._id).includes(value)) {
       // Disallow dupes
@@ -86,7 +104,14 @@ class EditForm extends Component {
 
   // Return false if email is invalid
   validateEmail(value, callback) {
-    if (!value || value === this.props.viewing.email) {
+
+    const edit = this.props.screen === screenEnum.view;
+    
+    if (!edit && !value) {
+      this.setState({emailValidation: "Email is required."});
+      return false;
+    }
+    else if (edit && (!value || value === this.props.viewing.email)) {
       return true;
     }
     else if (!re.testEmail(value)) {
@@ -108,8 +133,11 @@ class EditForm extends Component {
   // If clicked the button just add new input, if clicked the number
   // remove number from list of phones and edit it.
   handlePhonesClick(number) {
+
+    const edit = this.props.screen === screenEnum.view;
+
     this.setState(prevstate => {
-      let phones = new Set(prevstate.phones || this.props.viewing.phones);
+      let phones = new Set(edit ? prevstate.phones || this.props.viewing.phones : prevstate.phones);
       phones.delete(number);
       phones = [...phones];
 
@@ -131,10 +159,13 @@ class EditForm extends Component {
   // to phones list when losing
   // focus from input
   handlePhonesBlur() {
+
+    const edit = this.props.screen === screenEnum.view;
+
     return new Promise((resolve, reject) => {
       if (re.testPhone(this.state.currentPhone)) {
         this.setState(prevstate => {
-          let phones = new Set(prevstate.phones || this.props.viewing.phones);
+          let phones = new Set(edit ? prevstate.phones || this.props.viewing.phones : prevstate.phones);
           phones.add(prevstate.currentPhone);
           phones = [...phones];
   
@@ -181,7 +212,7 @@ class EditForm extends Component {
     if (this.state.email === "" || this.props.viewing.email === this.state.email)
       promise2 = new Promise(resolve => this.setState({email: null}, resolve));
 
-    if (this.props.viewing.address === this.state.address)
+    if (this.props.viewing.address === this.state.address || (!this.props.viewing.address && !this.state.address))
       promise3 = new Promise(resolve => this.setState({address: null}, resolve));
 
     // Test if edited phones are the same as original
@@ -227,8 +258,65 @@ class EditForm extends Component {
     })
   }
 
+  submitForm(e) {
+    // Don't redirect or refresh
+    e.preventDefault();
+
+    const edit = this.props.screen === screenEnum.view;
+
+    // First make sure there really are edits
+    const due = edit ? this.deleteUnnecessaryEdits() : Promise.resolve();
+
+    due.then(() => {
+
+      // Validate everything to give feedback to user if many are wrong
+      const nameValid = this.validateName(this.state.name);
+      const emailValid = this.validateEmail(this.state.email);
+      const phoneValid = this.validatePhone(this.state.currentPhone);
+
+      // Prevent submission if not validated
+      if (!(nameValid && emailValid && phoneValid))
+        return;
+
+      // Wait till currentPhone has been pushed into
+      // phones list before deciding what to do next
+      this.handlePhonesBlur().then(response => {
+        if (response) {
+          
+          if (edit) {
+            if (this.state.name) {
+              // If name has been changed, post new name and delete old one
+              this.props.post(this.state.name, this.state.email || this.props.viewing.email, this.state.address || this.props.viewing.address, this.state.phones || this.props.viewing.phones)
+              .then(() => {
+                this.props.delete(this.props.viewing._id);
+                this.props.get(this.state.name);
+                this.props.get();
+                this.cancel();
+              })
+            } else {
+              // If name hasn't been changed, put changes
+              this.props.put(this.props.viewing._id, this.state.email, this.state.address, this.state.phones);
+              this.props.get(this.state.name);
+              this.props.get();
+              this.cancel();
+            }
+          } else {
+            // If inserting just post
+            this.props.post(this.state.name, this.state.email, this.state.address, this.state.phones);
+            this.props.setScreen(screenEnum.browse);
+          }
+        }
+      })
+    });
+  }
+
   render() {
-    return <section id="edit-form" className="form-component">
+
+    const edit = this.props.screen === screenEnum.view;
+
+    return <form className="form-component"
+    onSubmit={this.submitForm}
+    >
       {
       // name and email input are very similar so handle both here
       ["name", "email"].map(field =>
@@ -237,9 +325,13 @@ class EditForm extends Component {
         {this.state[field] !== null ? <div className={"validatable " + (this.state[field+"Validation"] === "" ? "valid" : (this.state[field+"Validation"] ? "invalid" : ""))}>
           {/* Pass appropriate props to each name and email according
           to which field we're currently iterating */}
-          <input autoFocus name={field} placeholder={capitalize(field)} value={this.state[field]}
+          <input autoFocus={edit? true : false} name={field} placeholder={capitalize(field)} value={this.state[field]}
           onChange={this["handle"+capitalize(field)+"Change"]}
           onBlur={e => {
+
+            // If inserting just validate
+            if (!edit) return this["validate"+capitalize(field)](e.target.value);
+
             this.deleteUnnecessaryEdits()
             .then(() => this["validate"+capitalize(field)](e.target.value));
             this.setState(prevstate => {
@@ -250,6 +342,7 @@ class EditForm extends Component {
           }}></input>
           {this.state[field+"Validation"] ? <span>{this.state[field+"Validation"]}</span> : null}
         </div> :
+        // Just show a div with the field if unedited
         <div
         className="editable"
         onClick={() => this.setState(() => {
@@ -266,14 +359,19 @@ class EditForm extends Component {
           return prevstate.hover === field ? {hover: null} : prevstate;
         })}}>
           {field === "email" ? this.props.viewing[field] : this.props.viewing._id}
+          {/* Show a pen to indicate editable */}
           {this.state.hover === field ? <span><i className="fa fa-pencil fa-2x" aria-hidden="true"></i></span> : null}
         </div>}
       </React.Fragment>)}
       <label htmlFor="address">Address</label>
       {this.state.address !== null ? <div>
-        <input autoFocus name="address" placeholder="Address" value={this.state.address}
+        <input autoFocus={edit ? true : false} name="address" placeholder="Address" value={this.state.address}
         onChange={this.handleAddressChange}
         onBlur={() => {
+          
+          // If inserting nothing to do here
+          if (!edit) return;
+          
           this.deleteUnnecessaryEdits();
           this.setState(prevstate => {
             // Use async safe version because otherwise we
@@ -282,6 +380,7 @@ class EditForm extends Component {
           })
         }}></input>
       </div> :
+      // Just show a div with the field if unedited
       <div
         className="editable"
         onClick={() => this.setState({address: this.props.viewing.address})}
@@ -293,63 +392,37 @@ class EditForm extends Component {
         })}}
       >
         {this.props.viewing.address}
+        {/* Show a pen to indicate editable */}
         {this.state.hover === "address" ? <span><i className="fa fa-pencil fa-2x" aria-hidden="true"></i></span> : null}
       </div>}
       <label htmlFor="phones">Phone Number(s)</label>
       <Phones
         handlePhonesClick={this.handlePhonesClick}
         handlePhonesChange={this.handlePhonesChange}
-        handlePhonesBlur={() => {this.deleteUnnecessaryEdits().then(() => this.handlePhonesBlur())}}
+        handlePhonesBlur={() => {
+          if (edit)
+            this.deleteUnnecessaryEdits().then(() => this.handlePhonesBlur());
+          else
+            this.handlePhonesBlur();
+        }}
         validatePhone={this.validatePhone}
-        phones={this.state.phones || this.props.viewing.phones || []}
+        phones={edit ? (this.state.phones || this.props.viewing.phones || []) : this.state.phones}
         currentPhone={this.state.currentPhone}
         phoneValidation={this.state.phoneValidation}
       />
-      {this.isEdited() ? <section className="save-load-btns">
-        <button type="button" onClick={() => {
 
-          // First make sure there really are edits
-          this.deleteUnnecessaryEdits()
-          .then(() => {
-
-            // Validate everything to give feedback to user if many are wrong
-            const nameValid = this.validateName(this.state.name);
-            const emailValid = this.validateEmail(this.state.email);
-            const phoneValid = this.validatePhone(this.state.currentPhone);
-
-            // Prevent submission if not validated
-            if (!(nameValid && emailValid && phoneValid))
-              return;
-
-
-            // Wait till currentPhone has been pushed into
-            // phones list before deciding what to do next
-            this.handlePhonesBlur().then(response => {
-              if (response) {
-                if (this.state.name) {
-                  // If name has been changed, post new name and delete old one
-                  this.props.post(this.state.name, this.state.email || this.props.viewing.email, this.state.address || this.props.viewing.address, this.state.phones || this.props.viewing.phones)
-                  .then(() => {
-                    this.props.delete(this.props.viewing._id);
-                    this.props.get(this.state.name)
-                    this.cancel();
-                  })
-                } else {
-                  // If name hasn't been changed, put changes
-                  this.props.put(this.props.viewing._id, this.state.email, this.state.address, this.state.phones);
-                  this.props.get(this.state.name)
-                  this.cancel();
-                }
-              }
-            })
-          });
-        }}><i className="fa fa-floppy-o fa-2x" aria-hidden="true"></i></button>
+      {/* Edit buttons */}
+      {edit && this.isEdited() ? <section className="save-load-btns">
+        <button type="submit"><i className="fa fa-floppy-o fa-2x" aria-hidden="true"></i></button>
         <button type="button" onClick={this.cancel}><i className="fa fa-undo fa-2x" aria-hidden="true"></i></button>
       </section> : null}
-      <button type="button" className="delete-btn" onClick={() => this.props.setConfirmDelete(this.props.viewing._id)}>
+      {edit ? <button type="button" className="delete-btn" onClick={() => this.props.setConfirmDelete(this.props.viewing._id)}>
         <i className="fa fa-trash fa-2x" aria-hidden="true"></i>
-      </button>
-    </section>;
+      </button> : null}
+
+      {/* Insert buttons */}
+      {!edit ? <button className="submit-btn"><i className="fa fa-floppy-o fa-2x" aria-hidden="true"></i></button> : null}
+    </form>;
   }
 };
 

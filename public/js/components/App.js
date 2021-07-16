@@ -3,6 +3,7 @@ import React, {Component} from "react";
 import ContactList from "./ContactList.js";
 import InsertForm from "./InsertForm.js";
 import EditForm from "./EditForm";
+import MergedForm from "./MergedForm";
 
 import {fetchQuery, fetchBody} from "../helpers.js";
 
@@ -208,13 +209,14 @@ class App extends Component {
             setConfirmDelete={this.setConfirmDelete}
           /> : null}
           {/* When inserting show insert form */}
-          {this.state.screen === screenEnum.insert ? <InsertForm
+          {this.state.screen === screenEnum.insert ? <MergedForm
             list={this.state.list}
             post={this.post}
             setScreen={this.setScreen}
+            screen={this.state.screen}
           /> : null}
           {/* When viewing single contact show edit form */}
-          {this.state.screen === screenEnum.view ? <EditForm
+          {this.state.screen === screenEnum.view ? <MergedForm
             viewing={this.state.viewing}
             list={this.state.list}
             get={this.get}
@@ -223,6 +225,7 @@ class App extends Component {
             put={this.put}
             setConfirmDelete={this.setConfirmDelete}
             setScreen={this.setScreen}
+            screen={this.state.screen}
           /> : null}
           </div>
         </main>
