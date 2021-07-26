@@ -369,12 +369,12 @@ class EditForm extends Component {
           // might end up not displaying the edit symbol
           return prevstate.hover === field ? {hover: null} : prevstate;
         })}}>
-          {field === "email" ? this.props.viewing[field] : this.props.viewing._id}
+          <span>{field === "email" ? this.props.viewing[field] : this.props.viewing._id}</span>
           {/* Show a pen to indicate editable */}
           {this.state.hover === field ? <span><i className="fa fa-pencil fa-2x" aria-hidden="true"></i></span> : null}
         </div>}
       </React.Fragment>)}
-      <label htmlFor="address">Address</label>
+      <label htmlFor="address"><span>Address</span></label>
       {this.state.address !== null ? <div>
         <input autoFocus={edit ? true : false} name="address" placeholder="Address" value={this.state.address}
         onChange={this.handleAddressChange}
@@ -406,7 +406,7 @@ class EditForm extends Component {
         {/* Show a pen to indicate editable */}
         {this.state.hover === "address" ? <span><i className="fa fa-pencil fa-2x" aria-hidden="true"></i></span> : null}
       </div>}
-      <label id="phones-label" htmlFor="phones">Phone Number(s)</label>
+      <label id="phones-label" htmlFor="phones"><span>Phone Number(s)</span></label>
       <Phones
         handlePhonesClick={this.handlePhonesClick}
         handlePhonesChange={this.handlePhonesChange}

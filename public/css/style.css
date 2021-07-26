@@ -133,6 +133,7 @@ main {
 }
 
 .form-component {
+  margin-top: 30px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 3em 3em 3em;
@@ -147,7 +148,7 @@ main {
 
 .form-component label {
   text-align: end;
-  align-items: center;
+  align-items: start;
   grid-template-columns: 1fr auto;
 }
 
@@ -184,7 +185,7 @@ main {
 .editable {
   display: grid;
   grid-template-columns: 9fr 1fr;
-  align-items: center;
+  align-items: start;
 }
 
 .editable i {
