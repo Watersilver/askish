@@ -242,8 +242,14 @@ class EditForm extends Component {
     return nameEdited || emailEdited || addressEdited || phonesEdited;
   }
 
+  componentWillUnmount() {
+    this.isUnmounted = true;
+  }
+
   // Return to starting unedited state
   cancel() {
+    if (this.isUnmounted) return;
+
     this.setState({
       name: null,
       email: null,
@@ -286,23 +292,28 @@ class EditForm extends Component {
           if (edit) {
             if (this.state.name) {
               // If name has been changed, post new name and delete old one
-              this.props.post(this.state.name, this.state.email || this.props.viewing.email, this.state.address || this.props.viewing.address, this.state.phones || this.props.viewing.phones)
-              .then(() => {
-                this.props.delete(this.props.viewing._id);
-                this.props.get(this.state.name);
+              const newName = this.state.name;
+              const oldName = this.props.viewing._id;
+
+              // uncomment the "then" clause for truth
+              // comment for smooth ux
+              this.props.post(this.state.name, this.state.email || this.props.viewing.email, this.state.address || this.props.viewing.address, this.state.phones || this.props.viewing.phones, true, true)
+              // .then(() => {
+                this.props.delete(oldName, true);
+                this.props.get(newName);
                 this.props.get();
                 this.cancel();
-              })
+              // })
             } else {
               // If name hasn't been changed, put changes
-              this.props.put(this.props.viewing._id, this.state.email, this.state.address, this.state.phones);
+              this.props.put(this.props.viewing._id, this.state.email, this.state.address, this.state.phones, true);
               this.props.get(this.state.name);
               this.props.get();
               this.cancel();
             }
           } else {
             // If inserting just post
-            this.props.post(this.state.name, this.state.email, this.state.address, this.state.phones);
+            this.props.post(this.state.name, this.state.email, this.state.address, this.state.phones, true);
             this.props.setScreen(screenEnum.browse);
           }
         }
@@ -395,7 +406,7 @@ class EditForm extends Component {
         {/* Show a pen to indicate editable */}
         {this.state.hover === "address" ? <span><i className="fa fa-pencil fa-2x" aria-hidden="true"></i></span> : null}
       </div>}
-      <label htmlFor="phones">Phone Number(s)</label>
+      <label id="phones-label" htmlFor="phones">Phone Number(s)</label>
       <Phones
         handlePhonesClick={this.handlePhonesClick}
         handlePhonesChange={this.handlePhonesChange}

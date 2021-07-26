@@ -1,8 +1,6 @@
 import React, {Component} from "react";
 
 import ContactList from "./ContactList.js";
-import InsertForm from "./InsertForm.js";
-import EditForm from "./EditForm";
 import MergedForm from "./MergedForm";
 
 import {fetchQuery, fetchBody} from "../helpers.js";
@@ -56,17 +54,17 @@ class App extends Component {
       } else {
         fetchQuery("GET", {name}).then(json => {
           if (json.failed) {
-            console.error("Get contact" + String(name) + " request failed.");
+            console.error("Get contact " + String(name) + " request failed.");
             console.error(json);
             reject(json);
           } else if (!json[0]) {
-            console.log("No contact" + String(name) + " exists.");
+            console.log("No contact " + String(name) + " exists.");
           } else {
             this.setState({viewing: json[0]}, () => resolve());
           }
         })
         .catch(err => {
-          console.error("Get contact" + String(name) + " request failed.");
+          console.error("Get contact " + String(name) + " request failed.");
           console.error(err);
           reject(err);
         });
@@ -77,7 +75,24 @@ class App extends Component {
   // post returns a promise that resolves when ajax
   // call has returned and successfully changes state
   // and rejects otherwise
-  post(name, email, address, phones) {
+  post(name, email, address, phones, smoothUX, smoothUX2) {
+    // Set state to expected result for smoother UX
+    if (smoothUX) {
+      this.setState(prevState => ({
+        list: [...prevState.list, {_id: name}]
+      }));
+    }
+
+    // Do the following for smooth ux when viewing
+    // a posted contact that hasn't been added to db yet
+    if (smoothUX2) {
+      this.setState(prevState => ({
+        viewing: prevState.viewing ?
+        { _id: name, email, address, phones } :
+        null
+      }));
+    }
+
     return new Promise((resolve, reject) => {
       const params = {name, email};
 
@@ -107,7 +122,16 @@ class App extends Component {
   // put returns a promise that resolves when ajax
   // call has returned and successfully changes state
   // and rejects otherwise
-  put(name, email, address, phones) {
+  put(name, email, address, phones, smoothUX) {
+    // Set state to expected result for smoother UX
+    if (smoothUX) {
+      this.setState(prevState => ({
+        viewing: (prevState.viewing && (prevState.viewing._id === name)) ?
+        { _id: name, email, address, phones } :
+        null
+      }));
+    }
+
     return new Promise((resolve, reject) => {
       const params = {name};
 
@@ -138,15 +162,31 @@ class App extends Component {
   // delete returns a promise that resolves when ajax
   // call has returned and successfully changes state
   // and rejects otherwise
-  delete(name) {
+  delete(name, smoothUX) {
+    // If this is not empty string it means delete
+    // operation was invoked by the user and
+    // confirmDelete must be set to empty string
+    // after operation is done
+    const confirmDelete = this.state.confirmDelete;
+
+    // Set state to expected result for smoother UX
+    if (smoothUX) {
+      this.setState(prevState => ({
+        list: prevState.list.filter(contact => contact._id !== name),
+        confirmDelete: confirmDelete ? "" : prevState.confirmDelete
+      }));
+    }
+
     return new Promise((resolve, reject) => {
       fetchQuery("DELETE", {name}).then(json => {
         if (json.failed) {
           console.error("Delete contact " + String(name) + " request failed.");
           console.error(json);
           reject(json);
+        } else if (smoothUX) {
+          resolve();
         } else {
-          this.setState({confirmDelete: ""}, () => resolve());
+          this.setState({confirmDelete: confirmDelete ? "" : prevState.confirmDelete}, () => resolve());
         }
       })
       .catch(err => {
@@ -235,8 +275,9 @@ class App extends Component {
           <section>
             <span>Are you sure you want to delete {this.state.confirmDelete} permanently?</span>
             <button type="button" onClick={() => {
-              this.delete(this.state.confirmDelete);
+              this.delete(this.state.confirmDelete, true);
               this.get();
+
               this.setScreen(screenEnum.browse);
             }}>Yes</button>
             <button type="button" onClick={() => this.setConfirmDelete("")}>No</button>

@@ -3,13 +3,21 @@
 }
 
 body {
-  --col1: blue;
+  /* --col1: blue;
   --col2: rgb(236, 238, 250);
   --col3: rgb(245, 245, 247);
   --good: green;
   --bad: red;
   --light: white;
-  --dark: black;
+  --dark: black; */
+
+  --col1: rgb(124, 47, 47);
+  --col2: #EEE4CF;
+  --col3: rgb(245, 245, 247);
+  --good: rgb(67, 105, 57);
+  --bad: red;
+  --light: #F8F4E8;
+  --dark: #373750;
 
   --max-width: 900px;
 
@@ -57,6 +65,16 @@ body {
   grid-area: insert
 }
 
+#top>*>*, #contact-list>li>button, .delete-btn {
+  transform: perspective(20cm) translateZ(0px);
+
+  transition: 1s transform;
+}
+
+#top>*>*:hover, #contact-list>li>button:hover, .delete-btn:hover {
+  transform: perspective(20cm) translateZ(100px);
+}
+
 #top button, #contact-list button, .form-component button {
   color: inherit;
   background-color: transparent;
@@ -82,8 +100,11 @@ main {
   display: grid;
 }
 
-#contact-list {
+#contact-list, .form-component {
   font-size: 20px;
+}
+
+#contact-list {
   margin: 0;
 }
 
@@ -95,9 +116,10 @@ main {
   grid-template-columns: 9fr 1fr;
   align-items: center;
 
-  border-bottom: 1px solid var(--col2);
+  border-bottom: 4px solid var(--col2);
 
   background-color: transparent;
+  color: var(--dark);
 
   transition: 0.2s background-color;
 }
@@ -113,28 +135,56 @@ main {
 .form-component {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: 3em 3em 3em;
 }
 
 .form-component>* {
   margin: 10px;
   min-height: 2em;
+  display: grid;
+  color: var(--dark);
 }
 
 .form-component label {
   text-align: end;
+  align-items: center;
+  grid-template-columns: 1fr auto;
 }
 
 .form-component label::after {
   content: ":";
 }
 
-.validatable {
-  display: grid;
+.form-component input {
+  min-width: 0;
+  border: none;
+  border-bottom: var(--col1) 2px solid;
+  color: var(--col1);
+
+  outline: none;
+
+  background-color: transparent;
+
+  transition: 0.5s background-color;
+}
+
+.form-component input:hover, .form-component input:focus {
+  background-color: #ffffffcc;
+}
+
+.validatable span {
+  font-size: 15px;
+  font-weight: bold;
+}
+
+#phones-label {
+  align-self: start;
 }
 
 .editable {
   display: grid;
   grid-template-columns: 9fr 1fr;
+  align-items: center;
 }
 
 .editable i {
@@ -155,11 +205,20 @@ button.submit-btn, .save-load-btns {
 .save-load-btns>*, button.submit-btn {
   margin-top: 10px;
   border-radius: 10px;
+  
+  background-color: transparent;
+
+  transition: 0.5s background-color;
 }
 
 .save-load-btns>:first-child, button.submit-btn {
   border: 2px solid var(--good);
   color: var(--good);
+}
+
+.save-load-btns>*:hover, button.submit-btn:hover,
+.save-load-btns>*:focus, button.submit-btn:focus {
+  background-color: #ffffffcc;
 }
 
 .save-load-btns>:nth-child(2) {
@@ -209,9 +268,12 @@ button.delete-btn {
   display: grid;
   grid-template-areas: "msg msg";
 
-  min-height: 20vh;
+  min-height: 25vh;
 
-  background-color: var(--bad);
+  /* background-color: var(--bad);
+  color: var(--light); */
+
+  background-color: var(--dark);
   color: var(--light);
 }
 
@@ -225,7 +287,18 @@ button.delete-btn {
 #delete-dlg>section>:not(:first-child) {
   margin: 20px;
   border: none;
+  border-radius: 2px;
+  font-size: 30px;
+}
+
+#delete-dlg>section>:nth-child(2) {
+  background-color: var(--bad);
+  color: var(--light);
+}
+
+#delete-dlg>section>:nth-child(3) {
   background-color: var(--light);
+  color: var(--dark);
 }
 
 .valid {
@@ -237,9 +310,11 @@ button.delete-btn {
 }
 
 .valid input {
-  outline: var(--good) 1px solid;
+  /* outline: var(--good) 1px solid; */
+  border-bottom: var(--good) 2px solid;
 }
 
 .invalid input {
-  outline: var(--bad) 1px solid;
+  /* outline: var(--bad) 1px solid; */
+  border-bottom: var(--bad) 2px solid;
 }
